@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ore Lavoro</title>
+<meta name="description" content="Segna le ore di lavoro ogni giorno e crea l'immagine del rapporto mensile.">
+<meta name="theme-color" content="#1e40af">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ore">
+<style>
+:root{
+  --bg:#eef1f5;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e2e6ec;
+  --accent:#1e40af;--accent-soft:#dbe4ff;--accent-ink:#fff;
+  --weekend:#f6f7f9;--weekend-ink:#9ca3af;
+  --sick:#92400e;--sick-bg:#fdecc8;--off:#065f46;--off-bg:#d1fae5;--perm:#5b21b6;--perm-bg:#ede9fe;
+  --holiday:#be123c;--shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1115;--card:#1a1d23;--ink:#f1f3f6;--muted:#9aa3b2;--line:#2b3039;
+  --accent:#7aa2ff;--accent-soft:#1e2a4a;--accent-ink:#0b1020;
+  --weekend:#15181d;--weekend-ink:#6b7280;
+  --sick:#fbbf77;--sick-bg:#3a2a12;--off:#6ee7b7;--off-bg:#113026;--perm:#c4b5fd;--perm-bg:#2a2245;
+  --holiday:#fb7185;--shadow:none;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1115;--card:#1a1d23;--ink:#f1f3f6;--muted:#9aa3b2;--line:#2b3039;
+  --accent:#7aa2ff;--accent-soft:#1e2a4a;--accent-ink:#0b1020;
+  --weekend:#15181d;--weekend-ink:#6b7280;
+  --sick:#fbbf77;--sick-bg:#3a2a12;--off:#6ee7b7;--off-bg:#113026;--perm:#c4b5fd;--perm-bg:#2a2245;
+  --holiday:#fb7185;--shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.namebox{display:flex;align-items:center;gap:8px;margin:12px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 12px;box-shadow:var(--shadow)}
+.namebox label{font-size:13px;color:var(--muted);white-space:nowrap}
+.namebox input{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;font-weight:600;outline:none}
+.monthnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.monthnav h1{margin:0;font-size:24px;text-align:center;flex:1}
+.iconbtn{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:24px;line-height:1;display:grid;place-items:center;box-shadow:var(--shadow)}
+.summary{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin:10px 0 8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.main b{color:var(--accent)}
+
+#days{list-style:none;margin:0;padding:4px 0 120px}
+.row{display:grid;grid-template-columns:62px 92px 1fr auto;align-items:center;gap:8px;width:100%;min-height:56px;margin:0 0 6px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);text-align:left;box-shadow:var(--shadow)}
+.row.we{background:var(--weekend);box-shadow:none}
+.row.we .d{color:var(--weekend-ink)}
+.row.today{outline:2.5px solid var(--accent);outline-offset:-1px}
+.d{font-variant-numeric:tabular-nums}
+.d b{font-size:20px;margin-right:4px}
+.d small{color:var(--muted);font-size:14px}
+.row.hol .d small{color:var(--holiday);font-weight:600}
+.h{font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}
+.h.empty{color:var(--weekend-ink);font-weight:400}
+.tag{display:inline-block;font-size:14px;font-weight:600;padding:3px 8px;border-radius:999px}
+.tag.malattia{background:var(--sick-bg);color:var(--sick)}
+.tag.ferie{background:var(--off-bg);color:var(--off)}
+.tag.permesso{background:var(--perm-bg);color:var(--perm)}
+.s{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.s .n{display:block;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.chev{color:var(--muted);font-size:20px}
+
+.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.bottombar .wrap{padding:0}
+.big{display:block;width:100%;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 14px rgba(30,64,175,.25)}
+.big.secondary{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+
+dialog{border:0;padding:0;background:var(--card);color:var(--ink);width:100%;max-width:560px;max-height:92vh;margin:auto auto 0;border-radius:20px 20px 0 0;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.sheet{padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 2px;font-size:22px}
+.sheet .sub{color:var(--muted);font-size:14px;margin-bottom:12px;min-height:1em}
+.label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 6px}
+.stepper{display:grid;grid-template-columns:64px 1fr 64px;gap:8px;align-items:center}
+.stepper button{height:64px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:30px;font-weight:600}
+.val{text-align:center;font-size:36px;font-weight:800;font-variant-numeric:tabular-nums}
+.val small{font-size:16px;font-weight:600;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-weight:600}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.st-malattia.on{background:var(--sick);border-color:var(--sick);color:var(--card)}
+.chip.st-ferie.on{background:var(--off);border-color:var(--off);color:var(--card)}
+.chip.st-permesso.on{background:var(--perm);border-color:var(--perm);color:var(--card)}
+.chip.ghost{background:transparent;color:var(--muted)}
+.field{display:flex;gap:8px}
+.field input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;font-size:17px}
+.field button{border:1px solid var(--line);background:var(--bg);border-radius:12px;width:48px;font-size:20px}
+.nav3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-top:18px}
+.nav3 button{min-height:54px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-weight:700}
+.nav3 .ok{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.copybtn{margin-top:12px;width:100%;min-height:44px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--muted);font-weight:600}
+
+#preview .sheet{display:flex;flex-direction:column;gap:10px}
+#preview img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.hint{font-size:14px;color:var(--muted);text-align:center}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#toast.show{opacity:1}
+@media (max-width:360px){.row{grid-template-columns:56px 80px 1fr auto;gap:6px;padding:8px 10px}.summary{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="namebox">
+      <label for="name">Nome</label>
+      <input id="name" placeholder="Nome e cognome" autocomplete="name" enterkeyhint="done">
+    </div>
+    <div class="monthnav">
+      <button class="iconbtn" id="prevM" aria-label="Mese precedente">‹</button>
+      <h1 id="monthTitle"></h1>
+      <button class="iconbtn" id="nextM" aria-label="Mese successivo">›</button>
+    </div>
+    <div class="summary">
+      <div class="stat main"><b id="sTot">0</b><span>ore totali</span></div>
+      <div class="stat"><b id="sDays">0</b><span>giorni lavorati</span></div>
+      <div class="stat"><b id="sSick">0</b><span id="sSickL">malattia</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap"><ul id="days"></ul></main>
+
+<div class="bottombar"><div class="wrap">
+  <button class="big" id="makeImg">📷 Crea immagine da inviare</button>
+</div></div>
+
+<dialog id="ed">
+  <div class="sheet">
+    <h2 id="edTitle"></h2>
+    <div class="sub" id="edSub"></div>
+
+    <div class="label">Ore</div>
+    <div class="stepper">
+      <button id="minus" aria-label="Meno mezz'ora">−</button>
+      <div class="val" id="edVal"></div>
+      <button id="plus" aria-label="Più mezz'ora">+</button>
+    </div>
+    <div class="chips" id="quick" style="margin-top:10px"></div>
+
+    <div class="label">Oppure</div>
+    <div class="chips" id="stati"></div>
+
+    <div class="label">Cantiere</div>
+    <div class="field">
+      <input id="edSite" placeholder="Es. Magazz" autocomplete="off" enterkeyhint="done">
+      <button id="clrSite" aria-label="Cancella cantiere">×</button>
+    </div>
+    <div class="chips" id="sites" style="margin-top:8px"></div>
+
+    <div class="label">Note</div>
+    <div class="field"><input id="edNote" placeholder="(facoltativo)" autocomplete="off" enterkeyhint="done"></div>
+
+    <button class="copybtn" id="copyPrev">↺ Copia dal giorno lavorato prima</button>
+
+    <div class="nav3">
+      <button id="edPrev">‹ Prima</button>
+      <button class="ok" id="edOk">Fatto ✓</button>
+      <button id="edNext">Dopo ›</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="preview">
+  <div class="sheet">
+    <h2>Rapporto pronto</h2>
+    <img id="pvImg" alt="Anteprima del rapporto mensile">
+    <button class="big" id="shareBtn">📤 Invia (WhatsApp…)</button>
+    <button class="big secondary" id="dlBtn">⬇️ Salva immagine</button>
+    <button class="big secondary" id="pvClose">Chiudi</button>
+    <div class="hint" id="pvHint"></div>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const GG=["dom","lun","mart","merc","giov","ven","sab"];
+const GGL=["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+const STATI=[["malattia","Malattia"],["ferie","Ferie"],["permesso","Permesso"],["-","Riposo ( - )"]];
+const QUICK=[4,6,7,8,9,10];
+const KEY="ore-lavoro-v1";
+const $=id=>document.getElementById(id);
+
+/* ---------- dati ---------- */
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.m)return s;}catch(e){}
+  return {name:"",m:{},sites:["Magazz","Diga","Sav","Tetto"]};
+}
+let db=load();
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(db));}
+  catch(e){toast("Attenzione: impossibile salvare sul telefono");}
+}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+
+const now=new Date();
+let Y=now.getFullYear(),M=now.getMonth();
+const mk=()=>Y+"-"+String(M+1).padStart(2,"0");
+const dim=(y,m)=>new Date(y,m+1,0).getDate();
+const getDay=d=>(db.m[mk()]||{})[d]||{};
+function setDay(d,patch){
+  const k=mk();const mon=db.m[k]||(db.m[k]={});
+  const e=Object.assign({},mon[d]||{},patch);
+  for(const f of ["o","c","n"]){if(e[f]==null||String(e[f]).trim()==="")delete e[f];}
+  if(Object.keys(e).length)mon[d]=e;else delete mon[d];
+  if(!Object.keys(mon).length)delete db.m[k];
+  save();
+}
+function num(o){
+  if(o==null)return null;const s=String(o).trim().replace(",",".");
+  return /^\d+(\.\d+)?$/.test(s)?parseFloat(s):null;
+}
+const fmt=n=>String(Math.round(n*100)/100).replace(".",",");
+
+/* festività nazionali italiane */
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da);}
+const holCache={};
+function holidays(y){
+  if(holCache[y])return holCache[y];
+  const s=new Set(["0-1","0-6","3-25","4-1","5-2","7-15","10-1","11-8","11-25","11-26"]);
+  const em=easter(y);em.setDate(em.getDate()+1);s.add(em.getMonth()+"-"+em.getDate());
+  return holCache[y]=s;
+}
+const isHol=(y,m,d)=>holidays(y).has(m+"-"+d);
+const isWE=(y,m,d)=>{const w=new Date(y,m,d).getDay();return w===0||w===6;};
+
+/* testo della colonna "Ore ordinarie" come nel foglio Word */
+function cellOre(y,m,d,e){
+  if(e.o){const n=num(e.o);return n!=null?fmt(n):String(e.o);}
+  return (isWE(y,m,d)||isHol(y,m,d))?"-":"";
+}
+function totals(){
+  const mon=db.m[mk()]||{};let tot=0,days=0,sick=0,off=0;
+  for(const d in mon){const e=mon[d],n=num(e.o);
+    if(n!=null){tot+=n;if(n>0)days++;}
+    else if(e.o==="malattia")sick++;else if(e.o==="ferie")off++;}
+  return {tot,days,sick,off};
+}
+
+/* ---------- lista giorni ---------- */
+function render(){
+  $("monthTitle").textContent=MESI[M]+" "+Y;
+  $("name").value=db.name||"";
+  const t=totals();
+  $("sTot").textContent=fmt(t.tot);$("sDays").textContent=t.days;
+  $("sSick").textContent=t.sick;$("sSickL").textContent=t.off?("malattia · "+t.off+" ferie"):"malattia";
+  const ul=$("days");ul.textContent="";
+  const today=(now.getFullYear()===Y&&now.getMonth()===M)?now.getDate():-1;
+  for(let d=1;d<=dim(Y,M);d++){
+    const e=getDay(d),w=new Date(Y,M,d).getDay(),we=w===0||w===6,hol=isHol(Y,M,d);
+    const li=document.createElement("li");
+    const b=document.createElement("button");
+    b.className="row"+(we||hol?" we":"")+(hol?" hol":"")+(d===today?" today":"");
+    b.id="day-"+d;
+    const n=num(e.o);
+    let h;
+    if(n!=null)h='<span class="h">'+fmt(n)+' h</span>';
+    else if(e.o&&e.o!=="-")h='<span class="tag '+esc(e.o)+'">'+esc(label(e.o))+'</span>';
+    else h='<span class="h empty">'+(e.o==="-"||we||hol?"–":"·")+'</span>';
+    b.innerHTML='<span class="d"><b>'+d+'</b><small>'+(hol?"festa":GG[w])+'</small></span>'+h+
+      '<span class="s">'+esc(e.c||"")+(e.n?'<span class="n">📝 '+esc(e.n)+'</span>':"")+'</span><span class="chev">›</span>';
+    b.onclick=()=>openEd(d);
+    li.appendChild(b);ul.appendChild(li);
+  }
+}
+const label=o=>{const s=STATI.find(x=>x[0]===o);return s?s[1].replace(" ( - )",""):o;};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+$("name").addEventListener("input",e=>{db.name=e.target.value;save();});
+$("prevM").onclick=()=>{if(--M<0){M=11;Y--;}render();scrollTo(0,0);};
+$("nextM").onclick=()=>{if(++M>11){M=0;Y++;}render();scrollTo(0,0);};
+
+/* ---------- editor del giorno ---------- */
+let cur=0;
+const ed=$("ed");
+function openEd(d){cur=d;fillEd();if(!ed.open)ed.showModal();}
+function fillEd(){
+  const d=cur,e=getDay(d),w=new Date(Y,M,d).getDay();
+  $("edTitle").textContent=GGL[w]+" "+d+" "+MESI[M].toLowerCase();
+  $("edSub").textContent=isHol(Y,M,d)?"Giorno festivo":(w===0||w===6?"Fine settimana":"");
+  const n=num(e.o);
+  $("edVal").innerHTML=n!=null?fmt(n)+' <small>ore</small>':(e.o&&e.o!=="-"?esc(label(e.o)):(e.o==="-"?"–":'<small>nessuna</small>'));
+  $("quick").innerHTML=QUICK.map(q=>'<button class="chip'+(n===q?" on":"")+'" data-q="'+q+'">'+q+' ore</button>').join("");
+  $("stati").innerHTML=STATI.map(s=>'<button class="chip st-'+(s[0]==="-"?"riposo":s[0])+(e.o===s[0]?" on":"")+'" data-s="'+s[0]+'">'+s[1]+'</button>').join("")+
+    '<button class="chip ghost" data-s="">Svuota giorno</button>';
+  $("edSite").value=e.c||"";$("edNote").value=e.n||"";
+  renderSites();
+  $("edPrev").disabled=d<=1;$("edNext").disabled=d>=dim(Y,M);
+}
+function renderSites(){
+  const parts=splitSites($("edSite").value);
+  $("sites").innerHTML=db.sites.map(s=>'<button class="chip'+(parts.includes(s)?" on":"")+'" data-site="'+esc(s)+'">'+esc(s)+'</button>').join("");
+}
+const splitSites=v=>v.split("+").map(x=>x.trim()).filter(Boolean);
+function setOre(o){setDay(cur,{o:o});fillEd();render();}
+$("plus").onclick=()=>{const n=num(getDay(cur).o);setOre(String(n==null?8:Math.min(24,n+.5)));};
+$("minus").onclick=()=>{const n=num(getDay(cur).o);setOre(String(n==null?8:Math.max(0,n-.5)));};
+$("quick").onclick=e=>{const b=e.target.closest("[data-q]");if(b)setOre(b.dataset.q);};
+$("stati").onclick=e=>{const b=e.target.closest("[data-s]");if(!b)return;
+  if(b.dataset.s===""){setDay(cur,{o:"",c:"",n:""});fillEd();render();return;}
+  setOre(b.dataset.s);};
+$("sites").onclick=e=>{const b=e.target.closest("[data-site]");if(!b)return;
+  let parts=splitSites($("edSite").value);const s=b.dataset.site;
+  parts=parts.includes(s)?parts.filter(x=>x!==s):parts.concat(s);
+  $("edSite").value=parts.join(" + ");setDay(cur,{c:$("edSite").value});renderSites();render();};
+$("edSite").addEventListener("input",()=>{setDay(cur,{c:$("edSite").value});renderSites();render();});
+$("clrSite").onclick=()=>{$("edSite").value="";setDay(cur,{c:""});renderSites();render();};
+$("edNote").addEventListener("input",()=>{setDay(cur,{n:$("edNote").value});render();});
+for(const id of ["edSite","edNote"])$(id).addEventListener("keydown",e=>{if(e.key==="Enter")e.target.blur();});
+$("copyPrev").onclick=()=>{
+  for(let d=cur-1;d>=1;d--){const e=getDay(d);if(num(e.o)!=null&&num(e.o)>0){setDay(cur,{o:e.o,c:e.c||""});fillEd();render();toast("Copiato dal giorno "+d);return;}}
+  toast("Nessun giorno lavorato prima in questo mese");
+};
+function learnSites(){
+  const parts=splitSites(getDay(cur).c||"");let ch=false;
+  for(const p of parts){if(!db.sites.includes(p)){db.sites.unshift(p);ch=true;}}
+  if(ch){db.sites=db.sites.slice(0,12);save();}
+}
+function go(delta){learnSites();cur=Math.min(dim(Y,M),Math.max(1,cur+delta));fillEd();}
+$("edPrev").onclick=()=>go(-1);
+$("edNext").onclick=()=>go(1);
+$("edOk").onclick=()=>ed.close();
+ed.addEventListener("close",()=>{learnSites();render();const r=$("day-"+cur);r&&r.scrollIntoView({block:"nearest"});});
+ed.addEventListener("click",e=>{if(e.target===ed)ed.close();});
+
+/* ---------- immagine del rapporto (stesso formato del foglio Word) ---------- */
+const SERIF='"Times New Roman",Times,"Liberation Serif","Nimbus Roman","Noto Serif","DejaVu Serif",serif';
+function fitText(g,txt,x,y,maxW,size,bold){
+  let s=size;do{g.font=(bold?"bold ":"")+s+"px "+SERIF;}while(g.measureText(txt).width>maxW&&--s>10);
+  g.fillText(txt,x,y);
+}
+function drawReport(){
+  const S=2,W=1250,days=dim(Y,M);
+  const top=433,rh=29,rows=days+2,bottom=top+rh*rows,H=Math.max(1768,bottom+160);
+  const c=document.createElement("canvas");c.width=W*S;c.height=H*S;
+  const g=c.getContext("2d");g.scale(S,S);
+  g.fillStyle="#fff";g.fillRect(0,0,W,H);
+  g.fillStyle="#000";g.strokeStyle="#000";g.lineWidth=1.3;g.textBaseline="middle";
+
+  // titolo nel riquadro
+  g.strokeRect(391,156,465,103);g.textAlign="center";
+  g.font="bold 36px "+SERIF;g.fillText("Rapporto Mensile",623.5,190);
+
+  // tabella nome / mese
+  g.textAlign="left";
+  g.strokeRect(119,289,895,60);
+  g.beginPath();g.moveTo(119,319);g.lineTo(1014,319);g.moveTo(566,289);g.lineTo(566,349);g.stroke();
+  g.font="24px "+SERIF;
+  g.fillText("Nome Cognome",131,305);g.fillText("Mese Anno",578,305);
+  fitText(g,db.name||"",131,335,425,24);
+  g.font="24px "+SERIF;g.fillText(MESI[M]+"  "+Y,578,335);
+
+  // tabella giorni
+  const X=[96,359,624,888,1152];
+  g.strokeRect(X[0],top,X[4]-X[0],rh*rows);
+  g.beginPath();
+  for(let i=1;i<4;i++){g.moveTo(X[i],top);g.lineTo(X[i],bottom);}
+  for(let r=1;r<rows;r++){g.moveTo(X[0],top+r*rh);g.lineTo(X[4],top+r*rh);}
+  g.stroke();
+  const ty=r=>top+r*rh+rh/2+1;
+  g.font="bold 23px "+SERIF;
+  ["Giorno","Ore ordinarie","Note","Cantiere"].forEach((h,i)=>g.fillText(h,X[i]+11,ty(0)));
+  let tot=0;
+  for(let d=1;d<=days;d++){
+    const e=getDay(d),n=num(e.o);if(n!=null)tot+=n;
+    g.font="23px "+SERIF;
+    g.fillText(d+" "+GG[new Date(Y,M,d).getDay()],X[0]+11,ty(d));
+    g.fillText(cellOre(Y,M,d,e),X[1]+11,ty(d));
+    if(e.n)fitText(g,e.n,X[2]+11,ty(d),X[3]-X[2]-18,23);
+    if(e.c)fitText(g,e.c,X[3]+11,ty(d),X[4]-X[3]-18,23);
+  }
+  g.font="bold 23px "+SERIF;g.fillText("Tot",X[0]+11,ty(days+1));
+  const tw=g.measureText("Tot").width;g.font="23px "+SERIF;g.fillText(".",X[0]+11+tw,ty(days+1));
+  g.fillText(fmt(tot),X[1]+11,ty(days+1));
+
+  g.textAlign="center";g.font="24px "+SERIF;
+  g.fillText("TOT : "+fmt(tot)+" ore",624,bottom+71);
+  return c;
+}
+
+let blob=null,fname="";
+$("makeImg").onclick=()=>{
+  if(!(db.name||"").trim()){toast("Scrivi prima il nome in alto");$("name").focus();return;}
+  const c=drawReport();
+  fname="Rapporto_"+MESI[M]+"_"+Y+".png";
+  $("pvImg").src=c.toDataURL("image/png");
+  blob=null;c.toBlob(b=>{blob=b;},"image/png");
+  const canShare=!!(navigator.canShare&&navigator.canShare({files:[new File([new Blob()],"x.png",{type:"image/png"})]}));
+  $("shareBtn").hidden=!canShare;
+  $("pvHint").textContent=canShare?"“Invia” apre WhatsApp, Email, ecc.":"Salva l'immagine e poi inviala da WhatsApp.";
+  $("preview").showModal();
+};
+async function getBlob(){
+  if(blob)return blob;
+  const r=await fetch($("pvImg").src);return blob=await r.blob();
+}
+$("shareBtn").onclick=async()=>{
+  try{
+    const f=new File([await getBlob()],fname,{type:"image/png"});
+    await navigator.share({files:[f],title:"Rapporto "+MESI[M]+" "+Y});
+  }catch(e){if(e&&e.name!=="AbortError")toast("Invio non riuscito: usa “Salva immagine”");}
+};
+$("dlBtn").onclick=async()=>{
+  const a=document.createElement("a");a.href=URL.createObjectURL(await getBlob());a.download=fname;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("Immagine salvata");
+};
+$("pvClose").onclick=()=>$("preview").close();
+$("preview").addEventListener("click",e=>{if(e.target===$("preview"))$("preview").close();});
+
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200);}
+
+render();
+const r=$("day-"+now.getDate());if(r&&now.getMonth()===M)r.scrollIntoView({block:"center"});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
